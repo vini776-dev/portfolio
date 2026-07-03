@@ -1293,7 +1293,7 @@ function initContactForm() {
   });
 
   // Submit handler
-  DOM.contactForm.addEventListener('submit', (e) => {
+  DOM.contactForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     let isValid = true;
@@ -1304,16 +1304,41 @@ function initContactForm() {
     });
 
     if (isValid) {
-      // Success
-      showFormNotification('Message sent successfully! I\'ll get back to you soon.', 'success');
-      DOM.contactForm.reset();
+      const submitBtn = DOM.contactForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      submitBtn.disabled = true;
 
-      // Clear all error states
-      DOM.contactForm.querySelectorAll('.form-group').forEach((group) => {
-        group.classList.remove('error');
-        const errorEl = group.querySelector('.form-error');
-        if (errorEl) errorEl.textContent = '';
-      });
+      try {
+        const formData = new FormData(DOM.contactForm);
+        const response = await fetch(DOM.contactForm.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          // Success
+          showFormNotification('Message sent successfully! I\'ll get back to you soon.', 'success');
+          DOM.contactForm.reset();
+
+          // Clear all error states
+          DOM.contactForm.querySelectorAll('.form-group').forEach((group) => {
+            group.classList.remove('error');
+            const errorEl = group.querySelector('.form-error');
+            if (errorEl) errorEl.textContent = '';
+          });
+        } else {
+          showFormNotification('Oops! There was a problem sending your message.', 'error');
+        }
+      } catch (error) {
+        showFormNotification('Oops! There was a problem sending your message.', 'error');
+      } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
     }
   });
 }
